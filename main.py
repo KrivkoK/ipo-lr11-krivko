@@ -1,104 +1,90 @@
-from transport.client import Client
-from transport.van import Van 
-from transport.airplane import Airplane
-from transport.transport_company import TransportCompany
-from transport.vehicle import *
-from transport.hangar import Hangar
-import json
+import sys  #Импортируем модуль sys для использования функции выхода из программы
+from transport.client import Client  #Импортируем класс Client из модуля transport.client
+from transport.van import Van  #Импортируем класс Van из модуля transport.van
+from transport.ship import Ship  #Импортируем класс Ship из модуля transport.ship
+from transport.transportcompany import TransportCompany  #Импортируем класс TransportCompany из модуля transport.transportcompany
 
-close = True
-company = TransportCompany("Транспортная компания")
+def print_menu():  #Функция для отображения меню
+    print("Меню:")
+    print("1. Добавить клиента") 
+    print("2. Создать фургон")  
+    print("3. Создать судно")  
+    print("4. Загрузить груз в транспортное средство") 
+    print("5. Показать информацию о транспортном средстве")  
+    print("6. Оптимизировать распределение грузов")  
+    print("7. Выйти") 
 
+def main():  #Основная функция программы
+    company = TransportCompany("Моя Транспортная Компания")  #Создаем экземпляр класса TransportCompany
 
-def add_client():
-    name = input("Введите имя клиента: ")
-    cargo_weight = input("Введите вес груза: ")
-    is_vip = input("VIP клиент (да/нет): ").lower() == "да"
-    
-    if validate_str(name) != None and validate_number(cargo_weight) != None: #Валидация если функция возвращает не  None , то возврашаем значения, нет -> в файл не сохраняется клиент
-        client = Client(name, cargo_weight, is_vip) #Класс клиента
-        company.add_client(client)
+    while True:  #Запускаем бесконечный цикл для работы с меню
+        print_menu()  #Выводим меню на экран
+        choice = input("Выберите пункт меню: ")  #Запрашиваем у пользователя выбор пункта меню
 
+        if choice == '1':  #Если выбран пункт меню 1
+            name = input("Введите имя клиента: ")  #Запрашиваем имя клиента
+            cargo_weight = float(input("Введите вес груза клиента: "))  #Запрашиваем вес груза клиента
+            is_vip = input("Клиент VIP? (да/нет): ").lower() == 'да'  #Запрашиваем, является ли клиент VIP
+            client = Client(name, cargo_weight, is_vip)  #Создаем экземпляр класса Client
+            company.add_client(client)  #Добавляем клиента в компанию
+            print(f"Клиент {name} добавлен.\n") 
 
+        elif choice == '2':  #Если выбран пункт меню 2
+            capacity = float(input("Введите грузоподъемность фургона (в тоннах): "))  #Запрашиваем грузоподъемность фургона
+            is_refrigerated = input("Фургон с холодильником? (да/нет): ").lower() == 'да'  #Запрашиваем, есть ли холодильник у фургона
+            van = Van(capacity, is_refrigerated)  #Создаем экземпляр класса Van
+            company.add_vehicle(van)  #Добавляем фургон в компанию
+            print(f"Фургон создан. ID: {van.vehicle_id}\n") 
+        elif choice == '3':  #Если выбран пункт меню 3
+            capacity = float(input("Введите грузоподъемность судна (в тоннах): "))  #Запрашиваем грузоподъемность судна
+            name = input("Введите название судна: ")  #Запрашиваем название судна
+            ship = Ship(capacity, name)  #Создаем экземпляр класса Ship
+            company.add_vehicle(ship)  #Добавляем судно в компанию
+            print(f"Судно создано. Название: {name}, ID: {ship.vehicle_id}\n") 
 
+        elif choice == '4':  #Если выбран пункт меню 4
+            client_name = input("Введите имя клиента для загрузки: ")  #Запрашиваем имя клиента
+            vehicle_id = input("Введите ID транспортного средства: ")  #Запрашиваем ID транспортного средства
 
-def add_vehicle():
-    counter = 0 #Счетчик количества т/с в т/к
-    try:
-        
-        with open("transport/database.json", 'r', encoding='utf-8') as file:
-            vehicles_data = json.load(file)
-            
-            for a in vehicles_data['fields']['vehicles']:
-                counter += 1 #подсчет т/с
-                
-            if vehicles_data['fields'].get('hangars', 0) - 1 >= counter: 
-                vehicle_type = input("Введите тип (van/airplane): ")
-                capacity = input("Введите грузоподъемность: ")
-                
-                if validate_number(capacity) is not None:
-                    if vehicle_type.lower() == "van":
-                        is_refrigerated =  input("Холодильник (да/нет): ")
-                        van = Van(is_refrigerated, capacity, 0, []) #Класс Фургон
-                        company.add_vehicle(van)
-                        
-                    elif vehicle_type.lower() == "airplane":
-                        max_altitude = input("Введите максимальную высоту: ")
-                        
-                        if validate_number(max_altitude) is not None:
-                            airplane = Airplane(max_altitude, capacity, 0, []) #Класс аироплан
-                            company.add_vehicle(airplane)
-                            
-                        else:
-                            print("Макимальная высота должна принимать целочисленное/дробное значение")
-                else:
-                    print("Грузоподьемность должна принимать значение целочисленное/дробное")
-            else:
-                print("мест в ангаре нет.")
-    except:
-        print(f"Ошибка при создании т/с")
+            client = next((c for c in company.clients if c.name == client_name), None)  #Ищем клиента по имени
+            vehicle = next((v for v in company.vehicles if v.vehicle_id == vehicle_id), None)  #Ищем транспортное средство по ID
 
+            if client is None:  #Если клиент не найден
+                print(f"Клиент с именем {client_name} не найден.\n") 
+                continue
 
-#Выход из программы(смена флага True на False)
-def leave():
-    global close
-    print("Программа завершена. Можно в любой момент вернуться к текущей базе клиентов/транспорта")
-    close = False 
+            if vehicle is None:  #Если транспортное средство не найдено
+                print(f"Транспортное средство с ID {vehicle_id} не найдено.\n") 
+                continue
 
+            try:
+                vehicle.load_cargo(client)  #Пытаемся загрузить груз клиента в транспортное средство
+            except ValueError as e:  #Обрабатываем ошибку превышения грузоподъемности
+                print(f"Ошибка загрузки: {e}\n")
+            except TypeError as e:  #Обрабатываем ошибку типа данных
+                print(f"Ошибка типа данных: {e}\n")
 
+        elif choice == '5':  #Если выбран пункт меню 5
+            if not company.vehicles:  #Если нет транспортных средств
+                print("Нет доступных транспортных средств для отображения.\n")  
+                continue
 
-#Остальные функции в #Функции в файле function.py
-def console_programm():
-    while close:
-        try:
-            menu()
-            num = int(input("Выберите вариант взаимодействия "))
-            if num == 1:
-                Hangar.hangar_menu()
-            elif num == 2:
-                add_client()
-            elif num == 3:
-                add_vehicle()
-            elif num == 4:
-                output_client()
-            elif num == 5:
-                output_completed_client()
-            elif num == 6:
-                company.list_vehicles()
-            elif num == 7:
-                company.optimize_cargo_distribution()
-            elif num == 8:
-                Vehicle.load_cargo(0)
-            elif num == 9:
-                unloading_caro() 
-            elif num == 10:
-                example()
-            elif num == 11:
-                leave()
-            else:
-                print("Ошибка. Выберите От 1 до 11 ")
-        except:
-            print("Непредвиденная ошибка. Попробуйте еще раз ")
+            for vehicle in company.vehicles:  #Проходим по всем транспортным средствам
+                print(vehicle)  #Выводим информацию о транспортном средстве
+                for client in vehicle.clients_list:  #Проходим по всем клиентам, чьи грузы загружены
+                    print(f"  - Клиент: {client.name}, Вес груза: {client.cargo_weight} т., VIP: {'Да' if client.is_vip else 'Нет'}")
 
-        
-console_programm()
+            print()
+
+        elif choice == '6':  #Если выбран пункт меню 6
+            company.optimize_cargo_distribution()  #Оптимизируем распределение грузов
+            print("Распределение грузов оптимизировано.\n")
+
+        elif choice == '7':  #Если выбран пункт меню 7
+            sys.exit()  #Выход из программы
+
+        else:  #Если выбран неверный пункт меню
+            print("Неверный пункт меню, попробуйте снова.\n") 
+
+if __name__ == '__main__':  #Проверка, что данный файл запущен напрямую, а не импортирован
+    main()  #Вызов основной функции
